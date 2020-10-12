@@ -1,0 +1,9 @@
+image (ndarray: img_h, img_w, 3): 原始图像
+mask (list: length(output_size)=2) (ndarray: img_h, img_w): 人体分割的掩膜
+joints (list: length(output_size)=2) (ndarray: num_people, num_joints+1=17+1, 3): 人数, 关节点数目, 关节点位置以及是否可视
+area (ndarray: num_people, 1): 人体检测框的面积
+
+center (ndarry: length(x,y)=2): 中心点位置
+scale (float): 以图像长或宽为标准的尺度参数, 除以200
+res (tuple: length(x,y)=2): 图像分辨率
+rot (float): 旋转参数

@@ -1,0 +1,26 @@
+tools.train.main()
+    tools.train.parse_args()  # 对输入参数进行解析
+    lib.config.default.update_config()  # 根据输入参数对cfg进行更新
+    lib.utils.utils.create_logger()  # 创建logger
+    tools.train.main_worker()  # 训练主程序
+        lib.models.pose_higher_hrnet.get_pose_net  # 生成姿态网络
+            lib.models.pose_higher_hrnet.PoseHigherResolutionNet(nn.Module)  # 创建higherhrnet网络对象
+                lib.models.conv_module.HighResolutionModule(nn.Module)  # 创建hrnet的stage对象
+        lib.core.loss.MultiLossFactory(nn.Module)  # 创建loss对象
+        lib.utils.utils.get_optimizer()  # 创建优化器
+        lib.dataset.build.make_dataloader()  # 创建数据加载器对象
+            lib.dataset.build.build_dataset()  # 创建数据集对象
+                lib.dataset.transforms.bulid.build_transforms()  # 创建图像变换对象, 返回变换后的图像
+                    lib.dataset.transforms.transforms.Compose(object)  # 变换组合
+                    lib.dataset.transforms.transforms.ToTensor(object)  # 转换为tensor
+                    lib.dataset.transforms.transforms.Normalize(object)  # 归一化
+                    lib.dataset.transforms.transforms.RandomHorizontalFlip(object)  # 随机水平翻转
+                    lib.dataset.transforms.transforms.RandomAffineTransform(object)  # 随机仿射变换
+                lib.dataset.target_generators.target_generators.HeatmapGenerator(object)  # 创建热图生成对象
+                lib.dataset.target_generators.target_generators.OffsetGenerator(object)  # 创建偏移图生成对象
+                lib.dataset.COCOKeypoints.CocoKeypoints(CocoDataset)  # 创建CocoKeypoints对象
+                    lib.dataset.COCODataset.CocoDataset(Dataset)  # 创建CocoDataset对象, 返回目标检测的区域大小和mask注释
+        torch.optim.lr_scheduler.MultiStepLR()  # 调整学习率
+
+tools.valid()
+      lib.dataset.build.make_test_dataloader()  # 创建数据加载器对象

@@ -1,0 +1,120 @@
+{
+    "info" : info,  # 文件信息
+    "images" : [image],  # 图片信息
+    "annotations" : [annotation],  # 注释信息
+    "licenses" : [license],  # 许可信息
+}
+
+info{
+    "year" : int,  # 年份
+    "version" : str,  # 版本
+    "description" : str,  # 描述
+    "contributor" : str,  # 提供者
+    "url" : str,  # 下载地址
+    "date_created" : datetime, # 数据创建日期
+}
+
+info{
+    "description": "COCO 2017 Dataset",
+    "url": "http://cocodataset.org",
+    "version": "1.0",
+    "year": 2017,
+    "contributor": "COCO Consortium",
+    "date_created": "2017/09/01"
+}
+
+images{
+    "id" : int, # 图片id
+	"width" : int, # 图片宽
+	"height" : int, # 图片高
+	"file_name" : str, # 图片名
+	"license" : int,  # 许可类型
+	"flickr_url" : str,  # flickr网络地址
+	"coco_url" : str, # 图片链接
+	"date_captured" : datetime,# 图片标注时间
+}
+
+images{
+    "license": 4,
+    "file_name": "000000397133.jpg",
+    "coco_url": "http://images.cocodataset.org/val2017/000000397133.jpg",
+    "height": 427,
+    "width": 640,
+    "date_captured": "2013-11-14 17:02:52",
+    "flickr_url": "http://farm7.staticflickr.com/6116/6255196340_da26cf2c9e_z.jpg",
+    "id": 397133
+}
+
+license{
+    "id" : int,
+    "name" : str,
+    "url" : str,
+}
+
+license{
+    "url": "http://creativecommons.org/licenses/by-nc-sa/2.0/",
+    "id": 1,
+    "name": "Attribution-NonCommercial-ShareAlike License"
+}
+
+keypoints_annotations{
+    "id": int,  # 注释id
+    "image_id": int,  # 图片id
+    "category_id": int,  # 类别id
+    "segmentation": RLE or [polygon],  # 分割的注释, 单个对象为边界多边形, 多个对象为RLE
+    "area": float,  # 分割区域的面积
+    "bbox": [x,y,width,height],  # 检测的注释
+    "iscrowd": 0 or 1,  # 是否为多个对象
+    "keypoints": [x1,y1,v1,...],  # 关节点注释,
+    v = 0：未标记（在这种情况下，x = y = 0）
+    v = 1：已标记但不可见
+    v = 2：已标记并且可见
+    "num_keypoints": int,  # 关节点数目
+}
+
+keypoints_annotations{
+    "segmentation": [
+        [
+            125.12,539.69,
+            140.94,522.43,
+            100.67,496.54,
+            84.85,469.21,
+            73.35,450.52,
+            ...
+        ]
+    ],
+    "segmentation_rle": [
+        272, 2, 4, 4, 4, 4, 2, 9, 1, 2, 16, 43, 143, 24, 5, 8,...
+    ],
+    "num_keypoints": 10,
+    "area": 47803.27955,
+    "iscrowd": 0,
+    "keypoints": [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,142,309,1,177,320,2,191,398,2,237,317,2,233,426,2,306,233,2,92,452,2,123,468,2,0,0,0,251,469,2,0,0,0,162,551,2],
+    "image_id": 425226,
+    "bbox": [73.35,206.02,300.58,372.5],
+    "category_id": 1,
+    "id": 183126
+}
+
+keypoints_category{
+    "id": int,
+    "name": str,
+    "supercategory": str,
+    "keypoints": [str],
+    "skeleton": [edge]
+}
+
+keypoints_category{
+	"supercategory": "person",
+	"id": 1,
+	"name": "person",
+	"keypoints": ["nose","left_eye","right_eye","left_ear","right_ear","left_shoulder","right_shoulder","left_elbow","right_elbow","left_wrist","right_wrist","left_hip","right_hip","left_knee","right_knee","left_ankle","right_ankle"],
+	"skeleton": [[16,14],[14,12],[17,15],[15,13],[12,13],[6,12],[7,13],[6,7],[6,8],[7,9],[8,10],[9,11],[2,3],[1,2],[1,3],[2,4],[3,5],[4,6],[5,7]]
+}
+
+reslut_format[{
+    "image_id": int,
+    "category_id": int,
+    "keypoints": [x1,y1,v1,...,xk,yk,vk],
+    "score": float,
+}]

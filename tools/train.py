@@ -40,12 +40,17 @@ from utils.utils import setup_logger
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Train keypoints network')
+    """对输入参数进行解析
+
+    Returns: 解析实例
+
+    """
+    parser = argparse.ArgumentParser(description='Train keypoints network')  # 建立解析对象
     # general
     parser.add_argument('--cfg',
                         help='experiment configure file name',
                         required=True,
-                        type=str)
+                        type=str)  # 指定yaml文件的路径
 
     parser.add_argument('opts',
                         help="Modify config options using the command-line",
@@ -69,15 +74,16 @@ def parse_args():
                         type=int,
                         help='node rank for distributed training')
 
-    args = parser.parse_args()
+    args = parser.parse_args()  # 构造解析实例
 
     return args
 
 
 def main():
-    args = parse_args()
-    update_config(cfg, args)
+    args = parse_args()  # 对输入参数进行解析
+    update_config(cfg, args)  # 根据输入参数对默认的配置进行更新
 
+    # TODO 更新解析实例中的rank？
     cfg.defrost()
     cfg.RANK = args.rank
     cfg.freeze()
@@ -155,6 +161,7 @@ def main_worker(
     # setup logger
     logger, _ = setup_logger(final_output_dir, args.rank, 'train')
 
+    # 选择使用哪个网络文件生成网络模型
     model = eval('models.'+cfg.MODEL.NAME+'.get_pose_net')(
         cfg, is_train=True
     )
@@ -185,7 +192,7 @@ def main_worker(
         )
         #writer_dict['writer'].add_graph(model, (dump_input, ))
         # logger.info(get_model_summary(model, dump_input, verbose=cfg.VERBOSE))
-
+    MultiLossFactory
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
         # should always set the single device scope, otherwise,

@@ -37,7 +37,7 @@ def setup_logger(final_output_dir, rank, phase):
 
 
 def create_logger(cfg, cfg_name, phase='train'):
-    root_output_dir = Path(cfg.OUTPUT_DIR)
+    root_output_dir = Path(cfg.OUTPUT_DIR)  # 创建输出目录的path实例
     # set up logger
     if not root_output_dir.exists() and cfg.RANK == 0:
         print('=> creating {}'.format(root_output_dir))

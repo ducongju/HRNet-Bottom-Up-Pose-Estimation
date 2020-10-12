@@ -1,0 +1,18 @@
+cat = [‘person’, ‘bicycle’, ‘car’, ‘motorcycle’, ‘airplane’, ‘bus’, ‘train’, ‘truck’, ‘boat’, ‘traffic light’, ‘fire hydrant’, ‘stop sign’, ‘parking meter’, ‘bench’, ‘bird’, ‘cat’, ‘dog’, ‘horse’, ‘sheep’, ‘cow’, ‘elephant’, ‘bear’, ‘zebra’, ‘giraffe’, ‘backpack’, ‘umbrella’, ‘handbag’, ‘tie’, ‘suitcase’, ‘frisbee’, ‘skis’, ‘snowboard’, ‘sports ball’, ‘kite’, ‘baseball bat’, ‘baseball glove’, ‘skateboard’, ‘surfboard’, ‘tennis racket’, ‘bottle’, ‘wine glass’, ‘cup’, ‘fork’, ‘knife’, ‘spoon’, ‘bowl’, ‘banana’, ‘apple’, ‘sandwich’, ‘orange’, ‘broccoli’, ‘carrot’, ‘hot dog’, ‘pizza’, ‘donut’, ‘cake’, ‘chair’, ‘couch’, ‘potted plant’, ‘bed’, ‘dining table’, ‘toilet’, ‘tv’, ‘laptop’, ‘mouse’, ‘remote’, ‘keyboard’, ‘cell phone’, ‘microwave’, ‘oven’, ‘toaster’, ‘sink’, ‘refrigerator’, ‘book’, ‘clock’, ‘vase’, ‘scissors’, ‘teddy bear’, ‘hair drier’, ‘toothbrush’]
+
+sup = [‘appliance’, ‘food’, ‘indoor’, ‘accessory’, ‘electronic’, ‘furniture’, ‘vehicle’, ‘sports’, ‘animal’, ‘kitchen’, ‘person’, ‘outdoor’]
+
+git clone https://github.com/cocodataset/cocoapi.git
+cd cocoapi/PythonAPI
+python setup.py install
+
+from pycocotools.coco import COCO
+coco = COCO(annfile)
+
+getCatIds(catNms=[], supNms=[], catIds=[])  # 通过输入类别的名字、大类的名字或是种类的id，来筛选得到图片所属类别的id
+getImgIds(imgIds=[], catIds=[])  # 通过图片的id或是所属种类的id，得到图片的id
+loadImgs(ids=[]) # 得到图片的id信息后，就可以用loadImgs得到图片的信息了
+
+getAnnIds(imgIds=[], catIds=[], areaRng=[], iscrowd=None)  # 通过输入图片的id、类别的id、实例的面积、是否是人群来得到图片的注释id
+loadAnns(ids=[])  # 通过注释的id，得到注释的信息
+showAnns(anns)  # 使用标注的信息画出来分割、姿态估计的结果
