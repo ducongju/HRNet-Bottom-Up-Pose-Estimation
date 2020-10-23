@@ -90,13 +90,13 @@ def _print_name_value(logger, name_value, full_arch_name):
 
 
 def main():
-    args = parse_args()
-    update_config(cfg, args)
-    check_config(cfg)
+    args = parse_args()  # 对输入参数进行解析
+    update_config(cfg, args)  # 根据输入参数对默认的配置进行更新
+    check_config(cfg)  # 检查配置文件格式是否正确
 
     logger, final_output_dir, tb_log_dir = create_logger(
         cfg, args.cfg, 'valid'
-    )
+    )  # 创建logger
 
     logger.info(pprint.pformat(args))
     logger.info(cfg)
@@ -110,6 +110,7 @@ def main():
         cfg, is_train=False
     )
 
+    # 根据配置文件中的最佳模型路径载入参数
     if cfg.TEST.MODEL_FILE:
         logger.info('=> loading model from {}'.format(cfg.TEST.MODEL_FILE))
         model.load_state_dict(torch.load(cfg.TEST.MODEL_FILE), strict=True)
@@ -157,20 +158,21 @@ def main():
     all_preds = []
     all_scores = []
 
-    pbar = tqdm(total=len(test_dataset)) if cfg.TEST.LOG_PROGRESS else None
+    pbar = tqdm(total=len(test_dataset)) if cfg.TEST.LOG_PROGRESS else None  # 添加预测进度条
     for i, (images, joints, masks, areas) in enumerate(data_loader):
-        assert 1 == images.size(0), 'Test batch size should be 1'
+        assert 1 == images.size(0), 'Test batch size should be 1'  # Test batch size should be 1
 
         image = images[0].cpu().numpy()
         joints = joints[0].cpu().numpy()
         mask = masks[0].cpu().numpy()
         area = areas[0].cpu().numpy()
         # size at scale 1.0
+        # 按原本尺度计算, 获取多尺度大小
         base_size, center, scale = get_multi_scale_size(
             image, cfg.DATASET.INPUT_SIZE, 1.0, 1.0
         )
 
-        with torch.no_grad():
+        with torch.no_grad():  # 防爆内存
             heatmap_fuse = 0
             final_heatmaps = None
             final_kpts = None
@@ -180,9 +182,9 @@ def main():
 
                 image_resized, joints_resized, _, center, scale = resize_align_multi_scale(
                     image, joints, mask, input_size, s, 1.0
-                )
+                )  # 根据尺度调整图像大小
 
-                image_resized = transforms(image_resized)
+                image_resized = transforms(image_resized)  # 图像变换
                 image_resized = image_resized.unsqueeze(0).cuda()
 
                 outputs, heatmaps, kpts = get_multi_stage_outputs(

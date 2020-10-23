@@ -252,7 +252,7 @@ class HighResolutionModule(nn.Module):
 
         num_branches = self.num_branches
         num_inchannels = self.num_inchannels
-        fuse_layers = []
+        fuse_layers = []  # TODO 把融合方式从下采样 CONV 上采样, 改为shuffle
         for i in range(num_branches if self.multi_scale_output else 1):
             fuse_layer = []
             for j in range(num_branches):
@@ -304,10 +304,12 @@ class HighResolutionModule(nn.Module):
         x_fuse = []
 
         for i in range(len(self.fuse_layers)):
+
             y = x[0] if i == 0 else self.fuse_layers[i][0](x[0])
             for j in range(1, self.num_branches):
+                #
                 if i == j:
-                    y = y + x[j]
+                    y = y + x[j]  # TODO 此处改为所有分辨率相加, 然后shuffle, 然后分配给该分辨率
                 else:
                     y = y + self.fuse_layers[i][j](x[j])
             x_fuse.append(self.relu(y))

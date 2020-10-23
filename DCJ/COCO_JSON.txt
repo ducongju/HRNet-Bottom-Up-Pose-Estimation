@@ -3,6 +3,7 @@
     "images" : [image],  # 图片信息
     "annotations" : [annotation],  # 注释信息
     "licenses" : [license],  # 许可信息
+    "categories": [category]  # 类别信息
 }
 
 info{
@@ -61,7 +62,7 @@ keypoints_annotations{
     "id": int,  # 注释id
     "image_id": int,  # 图片id
     "category_id": int,  # 类别id
-    "segmentation": RLE or [polygon],  # 分割的注释, 单个对象为边界多边形, 多个对象为RLE
+    "segmentation": RLE or [polygon],  # 分割的注释, 单个对象为边界多边形(每两个数为一个坐标), 多个对象为RLE
     "area": float,  # 分割区域的面积
     "bbox": [x,y,width,height],  # 检测的注释
     "iscrowd": 0 or 1,  # 是否为多个对象
@@ -112,9 +113,50 @@ keypoints_category{
 	"skeleton": [[16,14],[14,12],[17,15],[15,13],[12,13],[6,12],[7,13],[6,7],[6,8],[7,9],[8,10],[9,11],[2,3],[1,2],[1,3],[2,4],[3,5],[4,6],[5,7]]
 }
 
-reslut_format[{
+result_format[{
     "image_id": int,
     "category_id": int,
     "keypoints": [x1,y1,v1,...,xk,yk,vk],
     "score": float,
 }]
+
+>>> ann_train_file='annotations/instances_train2017.json'
+>>> coco_train = COCO(ann_train_file)
+loading annotations into memory...
+Done (t=19.30s)
+creating index...
+index created!
+>>> len(coco_train.dataset['categories'])
+80
+>>> len(coco_train.dataset['images'])
+118287
+>>> len(coco_train.dataset['annotations'])
+860001
+>>>
+
+>>> from pycocotools.coco import COCO
+>>> coco_train = COCO('/Data/dcj/repository/HRNet-Bottom-Up/data/coco/annotations/person_keypoints_train2017.json')
+loading annotations into memory...
+Done (t=10.42s)
+creating index...
+index created!
+>>> len(coco_train.dataset['categories'])
+1
+>>> len(coco_train.dataset['images'])
+118287
+>>> len(coco_train.dataset['annotations'])
+262465
+>>>
+
+>>> coco_val = COCO('/Data/dcj/repository/HRNet-Bottom-Up/data/coco/annotations/person_keypoints_val2017.json')
+loading annotations into memory...
+Done (t=0.72s)
+creating index...
+index created!
+>>> len(coco_val.dataset['categories'])
+1
+>>> len(coco_val.dataset['images'])
+5000
+>>> len(coco_val.dataset['annotations'])
+11004
+>>>

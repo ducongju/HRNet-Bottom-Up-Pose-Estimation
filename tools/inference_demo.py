@@ -175,15 +175,16 @@ def main():
     torch.backends.cudnn.deterministic = cfg.CUDNN.DETERMINISTIC
     torch.backends.cudnn.enabled = cfg.CUDNN.ENABLED
 
-    args = parse_args()
-    update_config(cfg, args)
-    pose_dir = prepare_output_dirs(args.outputDir)
+    args = parse_args()  # 对输入参数进行解析
+    update_config(cfg, args)  # 根据输入参数对默认的配置进行更新
+    pose_dir = prepare_output_dirs(args.outputDir)  # 创建输出目录
     csv_output_rows = []
 
     pose_model = eval('models.'+cfg.MODEL.NAME+'.get_pose_net')(
         cfg, is_train=False
     )
 
+    # 生成姿态网络结构
     if cfg.TEST.MODEL_FILE:
         print('=> loading model from {}'.format(cfg.TEST.MODEL_FILE))
         pose_model.load_state_dict(torch.load(

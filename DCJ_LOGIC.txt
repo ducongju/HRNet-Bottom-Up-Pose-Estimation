@@ -1,0 +1,61 @@
+tools.train.main()
+    tools.train.parse_args()  # 对输入参数进行解析
+    lib.config.default.update_config()  # 根据输入参数对cfg进行更新
+    lib.utils.utils.create_logger()  # 创建logger
+    tools.train.main_worker()  # 训练主程序
+        lib.models.pose_higher_hrnet.get_pose_net()  # 生成姿态网络结构
+            lib.models.pose_higher_hrnet.PoseHigherResolutionNet(nn.Module)  # 创建higherhrnet网络对象
+                lib.models.conv_module.HighResolutionModule(nn.Module)  # 创建hrnet的stage对象
+        lib.core.loss.MultiLossFactory(nn.Module)  # 创建loss对象
+            lib.core.loss.HeatmapLoss(nn.Module)  # 创建HeatmapLoss对象
+            lib.core.loss.OffsetsLoss(nn.Module)  # 创建OffsetsLoss对象
+        lib.utils.utils.get_optimizer()  # 创建优化器
+        lib.dataset.build.make_dataloader()  # 创建训练数据加载器对象
+            lib.dataset.build.build_dataset()  # 创建数据集对象
+                lib.dataset.transforms.bulid.build_transforms()  # 创建图像变换对象
+                    lib.dataset.transforms.transforms.Compose(object)  # 变换组合
+                        lib.dataset.transforms.transforms.ToTensor(object)  # 转换为tensor
+                        lib.dataset.transforms.transforms.Normalize(object)  # 归一化
+                        lib.dataset.transforms.transforms.RandomHorizontalFlip(object)  # 随机水平翻转
+                        lib.dataset.transforms.transforms.RandomAffineTransform(object)  # 随机仿射变换
+                lib.dataset.target_generators.target_generators.HeatmapGenerator(object)  # 创建热图生成对象
+                lib.dataset.target_generators.target_generators.OffsetGenerator(object)  # 创建偏移图生成对象
+                lib.dataset.COCOKeypoints.CocoKeypoints(CocoDataset)  # 创建CocoKeypoints对象
+                    lib.dataset.COCODataset.CocoDataset(Dataset)  # 创建CocoDataset对象, 返回目标检测的区域大小和mask注释
+        torch.optim.lr_scheduler.MultiStepLR()  # 调整学习率
+        for epoch in range(begin_epoch, cfg.TRAIN.END_EPOCH):  # 循环迭代进行训练
+            lib.core.trainer.do_train(cfg, model, train_loader, loss_factory, optimizer, epoch,
+                 final_output_dir, tb_log_dir, writer_dict)  # 根据给定的参数进行一个epoch的训练
+                lib.utils.utils.AverageMeter()  # 计算并存储平均值和当前值
+                outputs, poffsets = model()  # higherhrnet网络对象的前向传播
+                heatmaps_losses, offset_losses = loss_factory()  # loss对象的计算
+                optimizer.zero_grad()  # 梯度置零
+                loss.backward()  # 反向传播
+                optimizer.step()  # 参数更新
+            lib.utils.utils.save_checkpoint()  # 保存checkpoint和model_best文件, 其中model_best是一个包括所有模块状态的字典, checkpoint是除此之外还包括epoch, model_name等参数
+
+
+tools.valid.main()
+    tools.train.parse_args()  # 对输入参数进行解析
+    lib.config.default.update_config()  # 根据输入参数对cfg进行更新
+    lib.config.default.check_config()  # 检查配置文件格式是否正确
+    lib.utils.utils.create_logger()  # 创建logger
+    lib.models.pose_higher_hrnet.get_pose_net  # 生成姿态网络结构
+    model.load_state_dict()  # 载入模型参数
+    lib.dataset.build.make_test_dataloader()  # 创建测试数据加载器对象
+    lib.core.group.HeatmapRegParser(object)  # 创建parser对象
+    for i, (images, joints, masks, areas) in enumerate(data_loader):  # 对每张图像进行处理
+        lib.utils.transforms.get_multi_scale_size()  # 获取多尺度大小
+        lib.utils.transforms.resize_align_multi_scale()  # 根据尺度调整图像大小
+        lib.core.inference.get_multi_stage_outputs()  #
+            lib.core.inference.get_one_stage_outputs()  # 
+        lib.core.inference.aggregate_results()  #
+        grouped, scores = parser.parse()  #
+
+tools.inference_demo.main()
+    lib.dataset.transforms.transforms.Compose(object)  # 变换组合
+    tools.inference_demo.parse_args()  # 对输入参数进行解析
+    lib.config.default.update_config()  # 根据输入参数对cfg进行更新
+    tools.inference_demo.prepare_output_dirs()  # 创建输出目录
+    lib.models.pose_higher_hrnet.get_pose_net  # 生成姿态网络结构
+    lib.core.group.HeatmapRegParser(object)  #

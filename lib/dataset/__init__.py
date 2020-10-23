@@ -17,10 +17,10 @@ coco_part_labels = [
     'nose', 'eye_l', 'eye_r', 'ear_l', 'ear_r',
     'sho_l', 'sho_r', 'elb_l', 'elb_r', 'wri_l', 'wri_r',
     'hip_l', 'hip_r', 'kne_l', 'kne_r', 'ank_l', 'ank_r'
-]
+]  # coco关节标签名, list: 17
 coco_part_idx = {
     b: a for a, b in enumerate(coco_part_labels)
-}
+}  # coco关节索引目录, dict: 17
 coco_part_orders = [
     ('nose', 'eye_l'), ('eye_l', 'eye_r'), ('eye_r', 'nose'),
     ('eye_l', 'ear_l'), ('eye_r', 'ear_r'), ('ear_l', 'sho_l'),
@@ -29,14 +29,14 @@ coco_part_orders = [
     ('elb_l', 'wri_l'), ('sho_r', 'elb_r'), ('elb_r', 'wri_r'),
     ('hip_l', 'kne_l'), ('kne_l', 'ank_l'), ('hip_r', 'kne_r'),
     ('kne_r', 'ank_r')
-]
+]  # coco关节连接顺序, dict: 19
 
 crowd_pose_part_labels = [
     'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
     'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
     'left_knee', 'right_knee', 'left_ankle', 'right_ankle',
     'head', 'neck'
-]
+]  # list: 14
 crowd_pose_part_idx = {
     b: a for a, b in enumerate(crowd_pose_part_labels)
 }
@@ -47,7 +47,7 @@ crowd_pose_part_orders = [
     ('left_elbow', 'left_wrist'), ('right_shoulder', 'right_elbow'), ('right_elbow', 'right_wrist'),
     ('left_hip', 'left_knee'), ('left_knee', 'left_ankle'), ('right_hip', 'right_knee'),
     ('right_knee', 'right_ankle')
-]
+]  # list: 15
 
 VIS_CONFIG = {
     'COCO': {

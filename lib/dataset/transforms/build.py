@@ -15,10 +15,10 @@ from . import transforms as T
 FLIP_CONFIG = {
     'COCO': [
         0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15
-    ],
+    ],  # 左右翻转后的关节顺序
     'COCO_WITH_CENTER': [
         0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15, 17
-    ],
+    ],  # TODO 此处修改为17, 18
     'CROWDPOSE': [
         1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 12, 13
     ],
@@ -29,6 +29,16 @@ FLIP_CONFIG = {
 
 
 def build_transforms(cfg, is_train=True):
+    """创建变换操作的对象
+
+    Args:
+        cfg (yaml): 配置文件
+        is_train (bool): 该数据集是否用于训练
+
+    Returns:
+        transforms (object): 变换操作
+
+    """
     assert is_train is True, 'Please only use build_transforms for training.'
     assert isinstance(cfg.DATASET.OUTPUT_SIZE, (list, tuple)), 'DATASET.OUTPUT_SIZE should be list or tuple'
     if is_train:
@@ -40,6 +50,7 @@ def build_transforms(cfg, is_train=True):
         output_size = cfg.DATASET.OUTPUT_SIZE
         flip = cfg.DATASET.FLIP
         scale_type = cfg.DATASET.SCALE_TYPE
+        # 训练时进行图像变换
     else:
         scale_type = cfg.DATASET.SCALE_TYPE
         max_rotation = 0
@@ -49,17 +60,21 @@ def build_transforms(cfg, is_train=True):
         input_size = 512
         output_size = [128]
         flip = 0
+        # 测试时不进行图像变换
 
     # coco_flip_index = [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
     # if cfg.DATASET.WITH_CENTER:
         # coco_flip_index.append(17)
+
+    # 选择COCO数据集或crowdpose数据集
     if 'coco' in cfg.DATASET.DATASET:
         dataset_name = 'COCO'
     elif 'crowd_pose' in cfg.DATASET.DATASET:
         dataset_name = 'CROWDPOSE'
     else:
         raise ValueError('Please implement flip_index for new dataset: %s.' % cfg.DATASET.DATASET)
- 
+
+    # 是否为数据集添加中心点热图
     if cfg.DATASET.WITH_CENTER:
         coco_flip_index = FLIP_CONFIG[dataset_name + '_WITH_CENTER']
     else:
@@ -80,6 +95,6 @@ def build_transforms(cfg, is_train=True):
             T.ToTensor(),
             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ]
-    )
+    )   # 详见内部
 
     return transforms

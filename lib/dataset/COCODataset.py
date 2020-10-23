@@ -33,7 +33,9 @@ class CocoDataset(Dataset):
     Args:
         root (string): Root directory where dataset is located to.
         dataset (string): Dataset name(train2017, val2017, test2017).
-        data_format(string): Data format for reading('jpg', 'zip')
+        data_format (string): Data format for reading('jpg', 'zip')
+        num_joints: 默认包含中心位置的关节数量, 即18
+        get_rescore_data: 获取重打分数据, 默认False
         transform (callable, optional): A function/transform that  takes in an opencv image
             and returns a transformed version. E.g, ``transforms.ToTensor``
         target_transform (callable, optional): A function/transform that takes in the
@@ -46,8 +48,8 @@ class CocoDataset(Dataset):
         self.root = root
         self.dataset = dataset
         self.data_format = data_format
-        self.coco = COCO(self._get_anno_file_name())
-        self.ids = list(self.coco.imgs.keys())
+        self.coco = COCO(self._get_anno_file_name())  # 加载指定路径的json文件
+        self.ids = list(self.coco.imgs.keys()) # 返回数据集中所有图像的id
         self.transform = transform
         self.target_transform = target_transform
         self.num_joints = num_joints
@@ -55,14 +57,14 @@ class CocoDataset(Dataset):
         self.get_rescore_data = get_rescore_data
         if bbox_file is not None:
             with open(bbox_file) as f:
-                data = json.load(f)
-            coco_dt = self.coco.loadRes(data)
-            coco_eval = COCOeval(self.coco, coco_dt, 'keypoints')
-            coco_eval._prepare()
-            self.bbox_preds = coco_eval._dts
+                data = json.load(f)  # 加载边界框文件
+            coco_dt = self.coco.loadRes(data)  # 加载人体检测result文件
+            coco_eval = COCOeval(self.coco, coco_dt, 'keypoints')  # 创建COCOeval对象
+            coco_eval._prepare()  # Prepare ._gts and ._dts for evaluation based on params
+            self.bbox_preds = coco_eval._dts  # TODO
 
         cats = [cat['name']
-                for cat in self.coco.loadCats(self.coco.getCatIds())]
+                for cat in self.coco.loadCats(self.coco.getCatIds())]  # 获取所有类别
         self.classes = ['__background__'] + cats
         logger.info('=> classes: {}'.format(self.classes))
         self.num_classes = len(self.classes)
@@ -75,6 +77,7 @@ class CocoDataset(Dataset):
             ]
         )
 
+    # 返回注释文件路径名
     def _get_anno_file_name(self):
         # example: root/annotations/person_keypoints_tran2017.json
         # image_info_test-dev2017.json
@@ -95,6 +98,7 @@ class CocoDataset(Dataset):
                 )
             )
 
+    # 返回图像路径名
     def _get_image_path(self, file_name):
         images_dir = os.path.join(self.root, 'images')
         dataset = 'test2017' if 'test' in self.dataset else self.dataset
@@ -103,8 +107,8 @@ class CocoDataset(Dataset):
         else:
             return os.path.join(images_dir, dataset, file_name)
 
-    def __getitem__(self, index):
-        """
+    def __getitem__(self, index): # 键值关联
+        """返回图像和添加中心后的注释
         Args:
             index (int): Index
 
@@ -112,12 +116,13 @@ class CocoDataset(Dataset):
             tuple: Tuple (image, target). target is the object returned by ``coco.loadAnns``.
         """
         coco = self.coco
-        img_id = self.ids[index]
-        ann_ids = coco.getAnnIds(imgIds=img_id)
-        target = coco.loadAnns(ann_ids)
+        img_id = self.ids[index]  # 根据图像索引返回指定图像的id
+        ann_ids = coco.getAnnIds(imgIds=img_id)  # 通过图像的id, 得到注释的id
+        target = coco.loadAnns(ann_ids)  # 通过注释的id, 得到这张图片的多人注释字典组成的列表
 
-        file_name = coco.loadImgs(img_id)[0]['file_name']
+        file_name = coco.loadImgs(img_id)[0]['file_name']  # 通过图像的id, 得到这张图片的图像字典, 对应的文件名
 
+        # 读取图像
         if self.data_format == 'zip':
             img = zipreader.imread(
                 self._get_image_path(file_name),
@@ -129,19 +134,19 @@ class CocoDataset(Dataset):
                 cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION
             )
 
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # 将BGR格式转换为RGB格式
         img_h, img_w = img.shape[:2]
 
         if self.transform is not None:
-            img = self.transform(img)
+            img = self.transform(img)  # 对图像进行变换
         if 'test' in self.dataset:
             return img
         if self.target_transform is not None:
-            target = self.target_transform(target)
+            target = self.target_transform(target)  # TODO 对注释进行变换, 暂时没用上
 
-        anno = [obj for obj in target]
-        joints, area = self.get_joints(anno)
-        human_mask = self.get_human_mask(anno, img_h, img_w)
+        anno = [obj for obj in target]  # TODO 这一步有什么意义
+        joints, area = self.get_joints(anno)  # 返回处理后的关节点注释和目标检测区域大小
+        human_mask = self.get_human_mask(anno, img_h, img_w)  # 返回目标检测的mask注释
 
         if 'val' in self.dataset or self.get_rescore_data:
             return img, joints, human_mask, area
@@ -158,19 +163,19 @@ class CocoDataset(Dataset):
 
         for i, obj in enumerate(anno):
             joints[i, :17, :3] = \
-                np.array(obj['keypoints']).reshape([-1, 3])
+                np.array(obj['keypoints']).reshape([-1, 3])  # 将一维列表转换为二维列表
 
-            area[i, 0] = obj['bbox'][2]*obj['bbox'][3]
+            area[i, 0] = obj['bbox'][2]*obj['bbox'][3]  # 目标检测的区域大小
 
             if obj['area'] < 32**2:
-                joints[i, -1, 2] = 0
+                joints[i, -1, 2] = 0  # 如果人体区域小于1024, 那么设置中心点为未标注
                 continue
             bbox = obj['bbox']
             center_x = (2*bbox[0] + bbox[2]) / 2.
-            center_y = (2*bbox[1] + bbox[3]) / 2.
+            center_y = (2*bbox[1] + bbox[3]) / 2.  # 中心点位置为区域的中心
             joints[i, -1, 0] = center_x
             joints[i, -1, 1] = center_y
-            joints[i, -1, 2] = 1
+            joints[i, -1, 2] = 1  # 把第十八个关节点设置为中心点
 
         return joints, area
 
@@ -179,7 +184,7 @@ class CocoDataset(Dataset):
         human_mask = np.zeros((img_h, img_w))
         for _, obj in enumerate(anno):
             box = obj['bbox']
-            tl_x = int(box[0]-0.5)
+            tl_x = int(box[0]-0.5)  # 左上x
             tl_y = int(box[1]-0.5)
             br_x = int(box[0]+box[2]+0.5)
             br_y = int(box[1]+box[3]+0.5)
@@ -199,7 +204,7 @@ class CocoDataset(Dataset):
             tmp, self.target_transform.__repr__().replace('\n', '\n' + ' ' * len(tmp)))
         return fmt_str
 
-    def processKeypoints(self, keypoints):
+    def processKeypoints(self, keypoints):  # 调用getscore, 暂不考虑
         tmp = keypoints.copy()
         if keypoints[:, 2].max() > 0:
             p = keypoints[keypoints[:, 2] > 0][:, :2].mean(axis=0)

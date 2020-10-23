@@ -83,14 +83,14 @@ def main():
     args = parse_args()  # 对输入参数进行解析
     update_config(cfg, args)  # 根据输入参数对默认的配置进行更新
 
-    # TODO 更新解析实例中的rank？
+    # 更新解析实例中的主机rank值, 主节点为0
     cfg.defrost()
     cfg.RANK = args.rank
     cfg.freeze()
 
     logger, final_output_dir, tb_log_dir = create_logger(
         cfg, args.cfg, 'train'
-    )
+    )  # 创建logger
 
     logger.info(pprint.pformat(args))
     logger.info(cfg)
@@ -161,11 +161,12 @@ def main_worker(
     # setup logger
     logger, _ = setup_logger(final_output_dir, args.rank, 'train')
 
-    # 选择使用哪个网络文件生成网络模型
+    # 根据配置文件构建网络结构
     model = eval('models.'+cfg.MODEL.NAME+'.get_pose_net')(
         cfg, is_train=True
     )
 
+    # 拷贝lib/models/pose_hrnet.py文件到输出目录之中
     # copy model file
     if not cfg.MULTIPROCESSING_DISTRIBUTED or (
             cfg.MULTIPROCESSING_DISTRIBUTED
@@ -177,22 +178,13 @@ def main_worker(
             final_output_dir
         )
 
+    # 用于训练信息的图形化显示
     writer_dict = {
         'writer': SummaryWriter(logdir=tb_log_dir),
         'train_global_steps': 0,
         'valid_global_steps': 0,
     }
 
-    if not cfg.MULTIPROCESSING_DISTRIBUTED or (
-            cfg.MULTIPROCESSING_DISTRIBUTED
-            and args.rank % ngpus_per_node == 0
-    ):
-        dump_input = torch.rand(
-            (1, 3, cfg.DATASET.INPUT_SIZE, cfg.DATASET.INPUT_SIZE)
-        )
-        #writer_dict['writer'].add_graph(model, (dump_input, ))
-        # logger.info(get_model_summary(model, dump_input, verbose=cfg.VERBOSE))
-    MultiLossFactory
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
         # should always set the single device scope, otherwise,
@@ -218,20 +210,34 @@ def main_worker(
     else:
         model = torch.nn.DataParallel(model).cuda()
 
+    if not cfg.MULTIPROCESSING_DISTRIBUTED or (
+            cfg.MULTIPROCESSING_DISTRIBUTED
+            and args.rank % ngpus_per_node == 0
+    ):
+        #  用于模型的图形化显示
+        dump_input = torch.rand(
+            (1, 3, cfg.DATASET.INPUT_SIZE, cfg.DATASET.INPUT_SIZE)
+        ).cuda()
+        # writer_dict['writer'].add_graph(model, (dump_input, ))
+        logger.info(get_model_summary(model, dump_input, verbose=cfg.VERBOSE))
+
     # define loss function (criterion) and optimizer
     loss_factory = MultiLossFactory(cfg).cuda()
 
+    # 创建训练数据的迭代器
     # Data loading code
     train_loader = make_dataloader(
         cfg, is_train=True, distributed=args.distributed
     )
     logger.info(train_loader.dataset)
 
+    # 模型加载以及优化策略的相关配置
     best_perf = -1
     best_model = False
     last_epoch = -1
     optimizer = get_optimizer(cfg, model)
 
+    # 自动从checkpoint中恢复训练
     begin_epoch = cfg.TRAIN.BEGIN_EPOCH
     checkpoint_file = os.path.join(
         final_output_dir, 'checkpoint.pth.tar')
@@ -248,18 +254,22 @@ def main_worker(
         logger.info("=> loaded checkpoint '{}' (epoch {})".format(
             checkpoint_file, checkpoint['epoch']))
 
+    # 调整学习率
     lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
         optimizer, cfg.TRAIN.LR_STEP, cfg.TRAIN.LR_FACTOR,
         last_epoch=last_epoch
     )
 
+    # 循环迭代进行训练
     for epoch in range(begin_epoch, cfg.TRAIN.END_EPOCH):
         lr_scheduler.step()
 
+        # 根据给定的参数进行一个epoch的训练
         # train one epoch
         do_train(cfg, model, train_loader, loss_factory, optimizer, epoch,
                  final_output_dir, tb_log_dir, writer_dict)
 
+        # 更新当前epoch的模型参数
         perf_indicator = epoch
         if perf_indicator >= best_perf:
             best_perf = perf_indicator
@@ -267,6 +277,8 @@ def main_worker(
         else:
             best_model = False
 
+        # 保存checkpoint和model_best文件,
+        # 其中model_best是一个包括所有模块状态的字典, checkpoint是除此之外还包括epoch, model_name等参数
         if not cfg.MULTIPROCESSING_DISTRIBUTED or (
                 cfg.MULTIPROCESSING_DISTRIBUTED
                 and args.rank == 0
@@ -286,6 +298,7 @@ def main_worker(
         final_output_dir, 'final_state{}.pth.tar'.format(gpu)
     )
 
+    # 将两个CPU的训练结果保存至final_state{}.pth.tar
     logger.info('saving final model state to {}'.format(
         final_model_state_file))
     torch.save(model.module.state_dict(), final_model_state_file)

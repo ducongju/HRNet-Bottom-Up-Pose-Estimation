@@ -42,7 +42,7 @@ class PoseHigherResolutionNet(nn.Module):
         self.inplanes = 64
         extra = cfg.MODEL.EXTRA
         self.dim_heat = cfg.DATASET.NUM_JOINTS-1 if cfg.DATASET.WITH_CENTER else cfg.DATASET.NUM_JOINTS
-        self.dim_reg = self.dim_heat * 2 + 1
+        self.dim_reg = self.dim_heat * 2 + 1  # offsetmap + centermap
         super(PoseHigherResolutionNet, self).__init__()
 
         # stem net
@@ -123,7 +123,7 @@ class PoseHigherResolutionNet(nn.Module):
     def _make_final_layers(self, cfg, multi_output_config_heatmap, multi_output_config_regression):
         extra = cfg.MODEL.EXTRA
 
-        final_layers = []
+        final_layers = []  # TODO 添加attention
         final_layers.append(nn.Conv2d(
             in_channels=multi_output_config_heatmap['NUM_CHANNELS'][0],
             out_channels=self.dim_heat,
@@ -322,20 +322,28 @@ class PoseHigherResolutionNet(nn.Module):
         return nn.Sequential(*modules), num_inchannels
 
     def forward(self, x):
+        # stem网络, 分辨率降为1/4
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
         x = self.conv2(x)
         x = self.bn2(x)
         x = self.relu(x)
+
+        # stage1:
+        # bottleneck的block
         x = self.layer1(x)
 
+        # stage2:
         x_list = []
+        # stage2包括2个branch, 1个transition(相同分辨率就不需要过渡), 1次fuse
         for i in range(self.stage2_cfg['NUM_BRANCHES']):
+            # 生成transition
             if self.transition1[i] is not None:
                 x_list.append(self.transition1[i](x))
             else:
                 x_list.append(x)
+        # 生成stage2
         y_list = self.stage2(x_list)
 
         x_list = []
@@ -354,6 +362,10 @@ class PoseHigherResolutionNet(nn.Module):
                 x_list.append(y_list[i])
         x = self.stage4(x_list)
 
+        # 在hrnet中, 直接将stage4的最高分辨率特征图作为输出, 经过一个final_layer得到最终结果
+        # x = self.final_layer(y_list[0])
+
+        # 这里对stage4中的四个分辨率特征图进行上采样, 然后concat
         # Upsampling
         x0_h, x0_w = x[0].size(2), x[0].size(3)
 
@@ -368,31 +380,41 @@ class PoseHigherResolutionNet(nn.Module):
         final_output = []
         final_offset = []
 
+        # 预测热图经过一个heatmap过渡层. 修改通道数为接下来的STNBLOCK做准备
         x_cls = self.transition_cls(x)
 
+        # 不同dilation下使用STNBLOCK的Heatmap预测, 输入输出通道数不变
+        # final_output / final_layers[0]: heatmap
         for j in range(len(self.multi_level_layers_4x_heatmap)):
             final_output.append(self.final_layers[0](  \
                 self.multi_level_layers_4x_heatmap[j](x_cls)))
 
+        # feature concat.
+        # num_deconvs = 0 不做, num_deconvs = 1 做一次deconv
         for i in range(self.num_deconvs):
+            # 是否在deconv层前进行concat
             if self.deconv_config.CAT_OUTPUT[i]:
                 x_cls = torch.cat((x_cls, torch.mean(torch.stack(final_output), 0)), 1)
 
             x_cls = self.deconv_layers[i](x_cls)
-            heatmap_2x = self.final_layers[i+2](x_cls)
-        
+            heatmap_2x = self.final_layers[i+2](x_cls)  # 进行2xheatmap的监督
+
+        # 将heatmap和x进行cancat, 然后经过回归过渡层
         x_reg = self.transition_reg(torch.cat([x, (torch.mean(torch.stack(final_output), 0))], 1))
 
+        # final_offset / final_layers[1]: regression
         for j in range(len(self.multi_level_layers_4x_regression)):
             final_offset.append(self.final_layers[1]( \
                 self.multi_level_layers_4x_regression[j](x_reg)))
 
+        # final_offset[0][:,-1:,:,:]]: centermap
+        # 将heatmap和centermap进行cancat, 此时final_output是所有高斯核编码格式的结果集合
         for i in range(len(final_output)):
             final_output[i] = torch.cat([final_output[i], final_offset[0][:,-1:,:,:]], 1)
         
-        final_outputs.append(final_output)
-        final_outputs.append([heatmap_2x])
-        final_offsets.append([final_offset[0][:,:-1,:,:]])
+        final_outputs.append(final_output)  # heatmap1/4 + centermap
+        final_outputs.append([heatmap_2x])  # heatmap1/2
+        final_offsets.append([final_offset[0][:,:-1,:,:]])  # offsetmap
 
         return final_outputs, final_offsets
 

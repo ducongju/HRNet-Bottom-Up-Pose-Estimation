@@ -171,8 +171,17 @@ _C.DEBUG.SAVE_TAGMAPS_PRED = True
 
 
 def update_config(cfg, args):
-    cfg.defrost()
-    cfg.merge_from_file(args.cfg)
+    """根据输入参数对cfg进行更新
+
+    Args:
+        cfg: 默认的配置
+        args: 解析实例
+
+    Returns:
+
+    """
+    cfg.defrost()  # 解冻配置文件中的参数
+    cfg.merge_from_file(args.cfg)  # 将解析实例中的cfg并入
     cfg.merge_from_list(args.opts)
 
     if not os.path.exists(cfg.DATASET.ROOT):

@@ -172,7 +172,7 @@ def get_multi_scale_size(image, input_size, current_scale, min_scale):
         h_resized = int(
             int((min_input_size/w*h+63)//64*64)*current_scale/min_scale
         )
-        scale_w = w / 200.0
+        scale_w = w / 200.0  # 尺度始终以200为基准
         scale_h = h_resized / w_resized * w / 200.0
     else:
         h_resized = int(min_input_size * current_scale / min_scale)

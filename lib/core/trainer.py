@@ -21,6 +21,7 @@ def do_train(cfg, model, data_loader, loss_factory, optimizer, epoch,
              output_dir, tb_log_dir, writer_dict):
     logger = logging.getLogger("Training")
 
+    # 计算并存储平均值和当前值
     batch_time = AverageMeter()
     data_time = AverageMeter()
 
@@ -33,7 +34,7 @@ def do_train(cfg, model, data_loader, loss_factory, optimizer, epoch,
     for i, (images, heatmaps, masks, offsets, weights) in enumerate(data_loader):
         data_time.update(time.time() - end)
 
-        outputs, poffsets = model(images)
+        outputs, poffsets = model(images)  # 前向传播
 
         heatmaps = [list(map(lambda x: x.cuda(non_blocking=True), heatmap))
                     for heatmap in heatmaps]
@@ -46,9 +47,11 @@ def do_train(cfg, model, data_loader, loss_factory, optimizer, epoch,
 
         heatmaps_losses, offset_losses = \
             loss_factory(outputs, poffsets, heatmaps,
-                         masks, offsets, offset_weights)
+                         masks, offsets, offset_weights)  # 计算loss
 
         loss = 0
+
+        # 如果输出的loss有两个分辨率, 将他们取平均
         for idx in range(cfg.LOSS.NUM_STAGES):
             if heatmaps_losses[idx] is not None:
                 heatmaps_loss = heatmaps_losses[idx].mean(dim=0)
@@ -63,13 +66,15 @@ def do_train(cfg, model, data_loader, loss_factory, optimizer, epoch,
                 )
                 loss = loss + offset_loss
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        optimizer.zero_grad()  # 梯度置零
+        loss.backward()  # 反向传播
+        optimizer.step()  # 参数更新
 
         batch_time.update(time.time() - end)
         end = time.time()
 
+        # Time: 一个batch耗费的时间, 一个batch耗费的平均时间
+        # Speed: 一个GPU每秒处理的sample个数
         if i % cfg.PRINT_FREQ == 0 and cfg.RANK == 0:
             msg = 'Epoch: [{0}][{1}/{2}]\t' \
                   'Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
@@ -86,9 +91,10 @@ def do_train(cfg, model, data_loader, loss_factory, optimizer, epoch,
                   )
             logger.info(msg)
 
-            writer = writer_dict['writer']
+            writer = writer_dict['writer']  # 设置tensorboard
             global_steps = writer_dict['train_global_steps']
             for idx in range(cfg.LOSS.NUM_STAGES):
+                # 添加用于可视化的数据
                 writer.add_scalar(
                     'train_stage{}_heatmaps_loss'.format(i),
                     heatmaps_loss_meter[idx].val,

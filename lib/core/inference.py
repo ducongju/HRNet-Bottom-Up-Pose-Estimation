@@ -17,6 +17,7 @@ from dataset.transforms import FLIP_CONFIG
 from utils.transforms import up_interpolate
 
 
+# 单阶段输出, 如果有两个分辨率, 取最大值作为最终结果
 def get_one_stage_outputs(outputs):
     if len(outputs) == 1:
         return outputs[0]

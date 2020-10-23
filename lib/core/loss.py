@@ -33,7 +33,7 @@ class HeatmapLoss(nn.Module):
 
     def forward(self, pred, gt, mask):
         assert pred.size() == gt.size()
-        loss = ((pred - gt)**2) * mask
+        loss = ((pred - gt)**2) * mask  # 只计算mask中预测和真值之间的loss
         loss = loss.mean(dim=3).mean(dim=2).mean(dim=1)
         return loss
 
@@ -42,12 +42,14 @@ class OffsetsLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
+    # TODO 当L1小于beta时, 0.5L1平方除以beta, 大于为L1-0.5乘beta
     def smooth_l1_loss(self, pred, gt, beta=1. / 9):
         l1_loss = torch.abs(pred - gt)
         cond = l1_loss < beta
         loss = torch.where(cond, 0.5*l1_loss**2/beta, l1_loss-0.5*beta)
         return loss
 
+    # 权值为0.01
     def forward(self, pred, gt, weights):
         assert pred.size() == gt.size()
         num_pos = torch.nonzero(weights > 0).size()[0]
